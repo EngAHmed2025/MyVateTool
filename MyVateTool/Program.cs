@@ -30,7 +30,8 @@ builder.Services.AddMudServices();
 
 builder.Services.AddScoped<ExcelJsInterop>();
 builder.Services.AddSyncfusionBlazor();
-builder.Services.AddScoped<InvoiceService>();    
+builder.Services.AddScoped<UserSettingsService>();
+builder.Services.AddScoped<InvoiceService>();
 
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

@@ -1,4 +1,134 @@
-﻿@page "/options.html"
+@page "/options.html"
+@implements IDisposable
+@inject UserSettingsService SettingsService
+@using System.ComponentModel.DataAnnotations
+@using System.Threading
+@using System.Threading.Tasks
+@using MyVateTool.Services
 
+<h1>Extension options</h1>
 
-<h1>My options page</h1>
+@if (model == null)
+{
+    <p>Loading your preferences…</p>
+}
+else
+{
+    <EditForm Model="model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label" for="vatRate">VAT rate (%)</label>
+            <InputNumber id="vatRate" class="form-control" step="0.01" @bind-Value="model.VatRatePercent" />
+            <div class="form-text">Used when calculating your VAT return estimates.</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="currencySymbol">Currency symbol</label>
+            <InputText id="currencySymbol" class="form-control" maxlength="5" @bind-Value="model.CurrencySymbol" />
+            <div class="form-text">Displayed alongside totals and summaries.</div>
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox id="autoDownload" class="form-check-input" @bind-Value="model.AutoDownloadReports" />
+            <label class="form-check-label" for="autoDownload">
+                Automatically download a VAT summary after I upload invoices
+            </label>
+        </div>
+
+        <button class="btn btn-primary" type="submit" disabled="@isSaving">
+            @(isSaving ? "Saving…" : "Save changes")
+        </button>
+
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-success mt-3" role="status">@statusMessage</div>
+        }
+    </EditForm>
+}
+
+@code {
+    private SettingsModel? model;
+    private bool isSaving;
+    private string? statusMessage;
+    private CancellationTokenSource? statusMessageCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetSettingsAsync();
+        model = SettingsModel.From(settings);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (model == null)
+        {
+            return;
+        }
+
+        isSaving = true;
+        statusMessage = null;
+
+        var settings = model.ToSettings();
+        await SettingsService.SaveSettingsAsync(settings);
+
+        isSaving = false;
+        statusMessage = "Settings saved.";
+
+        StateHasChanged();
+
+        statusMessageCts?.Cancel();
+        statusMessageCts = new CancellationTokenSource();
+        _ = ClearStatusMessageAfterDelayAsync(statusMessageCts.Token);
+    }
+
+    private async Task ClearStatusMessageAfterDelayAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4), token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (!token.IsCancellationRequested)
+        {
+            statusMessage = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        statusMessageCts?.Cancel();
+    }
+
+    private class SettingsModel
+    {
+        [Range(0, 100, ErrorMessage = "VAT rate must be between 0 and 100%.")]
+        public decimal VatRatePercent { get; set; }
+
+        [Required(ErrorMessage = "Currency symbol is required.")]
+        [StringLength(5, ErrorMessage = "Currency symbol must be 5 characters or fewer.")]
+        public string CurrencySymbol { get; set; } = "£";
+
+        public bool AutoDownloadReports { get; set; }
+
+        public static SettingsModel From(UserSettings settings) => new()
+        {
+            VatRatePercent = Math.Round(settings.VatRate * 100m, 2, MidpointRounding.AwayFromZero),
+            CurrencySymbol = settings.CurrencySymbol,
+            AutoDownloadReports = settings.AutoDownloadReports
+        };
+
+        public UserSettings ToSettings() => new()
+        {
+            VatRate = VatRatePercent / 100m,
+            CurrencySymbol = CurrencySymbol.Trim(),
+            AutoDownloadReports = AutoDownloadReports
+        };
+    }
+}

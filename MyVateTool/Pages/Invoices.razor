@@ -1,10 +1,27 @@
 @page "/invoices"
 @implements IDisposable
 @inject IJSRuntime JS
+@inject InvoiceService InvoiceService
+@inject UserSettingsService SettingsService
+@using MyVateTool.Services
+@using System.Globalization
+@using System.Linq
+@using System.Threading.Tasks
 
 <h3>📄 Invoices</h3>
 
 <button class="btn btn-primary" @onclick="LoadInvoices">🔄 Load Invoices</button>
+
+@if (HasSummary)
+{
+    <div class="alert alert-info mt-3">
+        <h5 class="alert-heading">VAT summary</h5>
+        <p class="mb-1"><strong>VAT rate:</strong> @VatRateDisplay</p>
+        <p class="mb-1"><strong>Total sales:</strong> @FormatCurrency(totalSales)</p>
+        <p class="mb-1"><strong>Total purchases:</strong> @FormatCurrency(totalPurchases)</p>
+        <p class="mb-0"><strong>Estimated VAT due:</strong> @FormatCurrency(estimatedTax)</p>
+    </div>
+}
 
 @if (invoices == null)
 {
@@ -42,23 +59,50 @@ else
 }
 
 @code {
-    private List<Dictionary<string, string>> invoices;
+    private List<Dictionary<string, string>>? invoices;
+    private List<Invoice> parsedInvoices = new();
+    private UserSettings? settings;
+    private decimal totalSales;
+    private decimal totalPurchases;
+    private decimal estimatedTax;
 
-    private DotNetObjectReference<Invoices> objRef;
+    private DotNetObjectReference<Invoices>? objRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        settings = await SettingsService.GetSettingsAsync();
+    }
 
     private async Task LoadInvoices()
     {
+        objRef?.Dispose();
         objRef = DotNetObjectReference.Create(this);
         await JS.InvokeVoidAsync("vatHelper.requestInvoices", objRef);
     }
 
     [JSInvokable("ReceiveInvoices")]
-    public Task ReceiveInvoices(List<Dictionary<string, object>> data)
+    public async Task ReceiveInvoices(List<Dictionary<string, object>> data)
     {
-        // Normalize values to strings
-        invoices = data.Select(d => d.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
+        parsedInvoices = InvoiceService.ConvertToInvoices(data).ToList();
+        settings = await SettingsService.GetSettingsAsync();
+
+        totalSales = parsedInvoices
+            .Where(i => i.Type.Equals("Sales", StringComparison.OrdinalIgnoreCase))
+            .Sum(i => i.Amount);
+
+        totalPurchases = parsedInvoices
+            .Where(i => i.Type.Equals("Purchase", StringComparison.OrdinalIgnoreCase))
+            .Sum(i => i.Amount);
+
+        var vatRate = settings?.VatRate ?? 0m;
+        estimatedTax = parsedInvoices.Sum(i => i.Amount * vatRate);
+
+        // Normalize values to strings for the table view
+        invoices = data
+            .Select(d => d.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? string.Empty))
+            .ToList();
+
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
     public void Dispose()
@@ -66,5 +110,20 @@ else
         objRef?.Dispose();
     }
 
+    private bool HasSummary => settings != null && invoices != null && invoices.Count > 0;
 
+    private string VatRateDisplay => settings == null
+        ? "Not configured"
+        : settings.VatRate.ToString("P2", CultureInfo.CurrentCulture);
+
+    private string FormatCurrency(decimal value)
+    {
+        var symbol = settings?.CurrencySymbol;
+        if (string.IsNullOrWhiteSpace(symbol))
+        {
+            symbol = "£";
+        }
+
+        return string.Format(CultureInfo.CurrentCulture, "{0}{1:N2}", symbol, value);
+    }
 }
