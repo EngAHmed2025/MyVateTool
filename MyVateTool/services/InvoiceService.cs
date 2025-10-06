@@ -6,10 +6,12 @@ namespace MyVateTool.Services
     public class InvoiceService
     {
         private readonly ILocalStorageService _localStorage;
+        private readonly UserSettingsService _settingsService;
 
-        public InvoiceService(ILocalStorageService localStorage)
+        public InvoiceService(ILocalStorageService localStorage, UserSettingsService settingsService)
         {
             _localStorage = localStorage;
+            _settingsService = settingsService;
         }
 
         public async Task<List<Invoice>> GetSalesInvoicesAsync()
@@ -27,9 +29,12 @@ namespace MyVateTool.Services
         public async Task<decimal> CalculateTaxReturnAsync()
         {
             var data = await LoadInvoicesAsync();
-            // مثال: ضريبة 14% من الإجمالي
-            return data.Sum(i => i.Amount * 0.14m);
+            var settings = await _settingsService.GetSettingsAsync();
+            return data.Sum(i => i.Amount * settings.VatRate);
         }
+
+        public IEnumerable<Invoice> ConvertToInvoices(IEnumerable<Dictionary<string, object>> raw)
+            => raw.Select(MapToInvoice);
 
         private async Task<List<Invoice>> LoadInvoicesAsync()
         {
