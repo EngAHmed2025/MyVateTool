@@ -1,0 +1,53 @@
+﻿{
+    "manifest_version": 3,
+    "name": "ETA VAT Helper",
+    "short_name": "VAT Helper",
+    "description": "Assists with VAT calculations on Egypt's ETA invoicing portal.",
+    "version": "0.1.0",
+    "icons": {
+        "16": "favicon.png",
+        "32": "favicon.png",
+        "48": "favicon.png",
+        "128": "favicon.png"
+    },
+    "action": {
+        "default_popup": "index.html",
+        "default_title": "Open VAT Helper"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://invoicing.eta.gov.eg/*",
+                "https://preprod.invoicing.eta.gov.eg/*"
+            ],
+            "js": [ "content.js" ],
+            "run_at": "document_idle"
+        }
+    ],
+    "host_permissions": [
+        "https://invoicing.eta.gov.eg/*",
+        "https://preprod.invoicing.eta.gov.eg/*"
+    ],
+    "permissions": [
+        "activeTab",
+        "storage"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "framework/*",
+                "content/*"
+            ],
+            "matches": [
+                "https://invoicing.eta.gov.eg/*",
+                "https://preprod.invoicing.eta.gov.eg/*"
+            ]
+
+
+        }
+    ]
+}

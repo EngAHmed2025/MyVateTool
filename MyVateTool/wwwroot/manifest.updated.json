@@ -1,0 +1,48 @@
+{
+    "manifest_version": 3,
+    "name": "ETA VAT Helper",
+    "version": "0.1.0",
+    "action": {
+        "default_popup": "index.html"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage",
+        "downloads"
+    ],
+    "host_permissions": [
+        "https://invoicing.eta.gov.eg/*",
+        "https://preprod.invoicing.eta.gov.eg/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://invoicing.eta.gov.eg/*",
+                "https://preprod.invoicing.eta.gov.eg/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; object-src 'self';"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "blazorApp/*"
+            ],
+            "matches": [
+                "https://invoicing.eta.gov.eg/*",
+                "https://preprod.invoicing.eta.gov.eg/*"
+            ]
+        }
+    ]
+}

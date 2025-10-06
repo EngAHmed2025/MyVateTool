@@ -1,0 +1,42 @@
+﻿@page "/Popup"
+@inject IJSRuntime JS
+
+<h2>استيراد فواتير ETA → Excel</h2>
+<div style="display:flex; gap:8px; margin:8px 0;">
+    <button @onclick="Scrape">سحب الفواتير من الصفحة</button>
+    <button @onclick="Export" disabled="@(!hasData)">تصدير إلى Excel</button>
+</div>
+
+@if (hasData)
+{
+    <p>عدد السجلات: @rows.Count</p>
+}
+
+@code {
+    List<Dictionary<string, object>> rows = new();
+    bool hasData => rows?.Count > 0;
+
+    async Task Scrape()
+    {
+        var res = await JS.InvokeAsync<object>("ExtensionBridge.scrapeFromActiveTab");
+        var dict = res as IDictionary<string, object>;
+        if (dict != null && dict.TryGetValue("ok", out var okObj) && (bool)okObj)
+        {
+            if (dict.TryGetValue("data", out var dataObj) && dataObj is IEnumerable<object> list)
+            {
+                rows = list.Select(o => (o as IDictionary<string, object>)!
+                         .ToDictionary(kv => kv.Key, kv => kv.Value)).ToList();
+            }
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Scrape failed");
+        }
+    }
+
+    async Task Export()
+    {
+        await JS.InvokeVoidAsync("ExportHelpers.exportToExcelAndDownload", "eta-invoices.xlsx", rows);
+    }
+}

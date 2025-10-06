@@ -1,0 +1,54 @@
+﻿@inject IJSRuntime JS
+@page "/"
+
+<h3>Invoices</h3>
+
+@if (invoices == null || invoices.Count == 0)
+{
+    <p>No invoices loaded yet...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                @foreach (var header in invoices.First().Keys)
+                {
+                    <th>@header</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in invoices)
+            {
+                <tr>
+                    @foreach (var cell in row.Values)
+                    {
+                        <td>@cell</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Dictionary<string, string>> invoices = new();
+
+    [JSInvokable]
+    public Task ReceiveInvoices(List<Dictionary<string, string>> data)
+    {
+        invoices = data;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("vatHelper.requestInvoices", dotNetRef);
+        }
+    }
+}

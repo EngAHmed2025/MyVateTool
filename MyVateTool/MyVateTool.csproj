@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  <CleanBeforePublish>true</CleanBeforePublish>
+  <PublishTrimmed>false</PublishTrimmed>
+<BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
+<PublishDir>bin\Release\net8.0\publish\</PublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\background.js" />
+    <Content Remove="wwwroot\content.js" />
+    <Content Remove="wwwroot\js\bridge.js" />
+    <Content Remove="wwwroot\js\excelInterop.js" />
+    <Content Remove="wwwroot\js\export.js" />
+    <Content Remove="wwwroot\js\file-saver.min.js" />
+    <Content Remove="wwwroot\js\interop.js" />
+    <Content Remove="wwwroot\js\pdf-lib.umd.min.js" />
+    <Content Remove="wwwroot\js\pdfInterop.js" />
+    <Content Remove="wwwroot\js\xlsx.full.min.js" />
+    <Content Remove="wwwroot\sandbox.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazor.BrowserExtension" Version="3.*" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="itext7" Version="9.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.*" PrivateAssets="all" />
+    <PackageReference Include="MudBlazor" Version="8.12.0" />
+    <PackageReference Include="pdfmake" Version="0.1.18" />
+    <PackageReference Include="Syncfusion.Blazor.PdfViewer" Version="27.1.58" />
+    <PackageReference Include="TimeSpanParserUtil" Version="1.2.0" />
+  </ItemGroup>
+	<Target Name="CopyBlazorFiles" AfterTargets="Publish">
+		<MakeDir Directories="$(PublishDir)_framework" />
+		<MakeDir Directories="$(PublishDir)_content" />
+
+		<!-- Content -->
+		<Copy SourceFiles="@(Content)" DestinationFolder="$(PublishDir)wwwroot\%(Content.RecursiveDir)" />
+
+		<!-- Framework -->
+		<ItemGroup>
+			<FrameworkFiles Include="$(PublishDir)wwwroot\_framework\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(FrameworkFiles)" DestinationFolder="$(PublishDir)_framework\%(FrameworkFiles.RecursiveDir)" />
+
+		<!-- Content -->
+		<ItemGroup>
+			<ContentFiles Include="$(PublishDir)wwwroot\_content\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(ContentFiles)" DestinationFolder="$(PublishDir)_content\%(ContentFiles.RecursiveDir)" />
+	</Target>
+
+
+</Project>

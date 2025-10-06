@@ -1,0 +1,51 @@
+﻿@page "/upload"
+@inject ExcelJsInterop ExcelInterop
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<InputFile OnChange="OnFileSelected" />
+
+@if (invoices != null)
+{
+    <h3>Found @invoices.Count invoices</h3>
+    <table>
+        <thead><tr><th>Invoice No</th><th>Date</th><th>Total</th></tr></thead>
+        <tbody>
+            @foreach (var r in invoices)
+            {
+                <tr>
+                    <td>@(r.ContainsKey("InvoiceNo") ? r["InvoiceNo"] : r.GetValueOrDefault("رقم الفاتورة", ""))</td>
+                    <td>@(r.GetValueOrDefault("Date", r.GetValueOrDefault("التاريخ", "")))</td>
+                    <td>@(r.GetValueOrDefault("Total", r.GetValueOrDefault("الإجمالي", r.GetValueOrDefault("إجمالي", ""))))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button @onclick="SaveToLocal">Save</button>
+}
+
+@code {
+    List<Dictionary<string, object>> invoices;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 20_000_000).CopyToAsync(ms);
+        var bytes = ms.ToArray();
+        try
+        {
+            invoices = await ExcelInterop.ParseExcelAsync(bytes);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            invoices = new List<Dictionary<string, object>>();
+        }
+        StateHasChanged();
+    }
+
+    private async Task SaveToLocal()
+    {
+        await LocalStorage.SetItemAsync("invoices", invoices);
+    }
+}

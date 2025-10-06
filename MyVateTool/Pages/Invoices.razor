@@ -1,0 +1,70 @@
+@page "/invoices"
+@implements IDisposable
+@inject IJSRuntime JS
+
+<h3>📄 Invoices</h3>
+
+<button class="btn btn-primary" @onclick="LoadInvoices">🔄 Load Invoices</button>
+
+@if (invoices == null)
+{
+    <p>No invoices loaded yet.</p>
+}
+else if (invoices.Count == 0)
+{
+    <p>No invoices were found on the page.</p>
+}
+else
+{
+    <div style="max-height:70vh; overflow:auto;">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                @foreach (var h in invoices.First().Keys)
+                {
+                    <th>@h</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in invoices)
+            {
+                <tr>
+                    @foreach (var v in row.Values)
+                    {
+                        <td>@v</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
+}
+
+@code {
+    private List<Dictionary<string, string>> invoices;
+
+    private DotNetObjectReference<Invoices> objRef;
+
+    private async Task LoadInvoices()
+    {
+        objRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("vatHelper.requestInvoices", objRef);
+    }
+
+    [JSInvokable("ReceiveInvoices")]
+    public Task ReceiveInvoices(List<Dictionary<string, object>> data)
+    {
+        // Normalize values to strings
+        invoices = data.Select(d => d.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "")).ToList();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
+    }
+
+
+}

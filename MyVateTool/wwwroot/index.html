@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="MyVateTool - Your VAT calculation assistant." />
+    <meta name="theme-color" content="#0078d7" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'wasm-unsafe-eval';">
+    <title>MyVateTool</title>
+    <base href="/" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+    <link href="_content/Syncfusion.Blazor.Themes/bootstrap5.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png" />
+    <link href="MyVateTool.styles.css" rel="stylesheet" />
+    <link rel="manifest" href="manifest.json" />
+</head>
+
+<body>
+    <div id="app" aria-busy="true" role="status">
+        <svg class="loading-progress" aria-hidden="true">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui" role="alert">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="interop.js" defer></script>
+    <script src="js/xlsx.full.min.js" defer></script>
+    <script src="_content/Syncfusion.Blazor.Core/scripts/syncfusion-blazor.min.js"></script>
+    <script type="module" src="js/bridge.js" defer></script>
+    <script src="js/file-saver.min.js"></script>
+    <script src="js/excelInterop.js"></script>
+    <script src="js/pdf-lib.umd.min.js"></script>
+    <script src="js/pdfInterop.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>
